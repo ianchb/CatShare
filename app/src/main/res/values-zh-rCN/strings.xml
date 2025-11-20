@@ -21,6 +21,9 @@
     <plurals name="noti_complete_partial">
         <item quantity="other">传输中断，接收到 %d 个文件，点击查看</item>
     </plurals>
+    <plurals name="files_summary">
+        <item quantity="other">%d 个文件 • %s</item>
+    </plurals>
     <string name="stop">停止</string>
     <string name="noti_receiver_title">CatShare 接收服务</string>
     <string name="bluetooth_disabled">蓝牙已关闭或不可用</string>
@@ -39,7 +42,7 @@
     <string name="noti_send_interrupted">文件发送已中断</string>
     <string name="send_ok">发送完成</string>
     <string name="app_busy_toast">正在进行其他发送/接收任务</string>
-    <string name="scanning_desc">正在扫描接收者，请对方开启互传功能。</string>
+    <string name="scanning_desc">正在扫描接收者……</string>
     <string name="choose_recipient">选择接收者</string>
     <string name="no_file_shared">分享内容为空或无法读取</string>
     <string name="unknown">未知</string>
@@ -62,6 +65,13 @@
     <string name="msg_copied_to_clipboard">文本已复制至剪贴板</string>
     <string name="cancelled_by_user_local">传输已被本设备取消</string>
     <string name="cancelled_by_user_remote">传输已被对端设备取消</string>
-    <string name="wifi_disabled">WiFi 已关闭或不可用</string>
+    <string name="wifi_disabled">Wi-Fi 已关闭或不可用</string>
     <string name="auto_accept_name">自动接收</string>
+    <string name="sharing_text">分享文本</string>
+    <string name="files_to_send">要发送的文件</string>
+    <string name="text_message">文本消息</string>
+    <string name="text_desc">文本</string>
+    <string name="available_devices">可用的设备</string>
+    <string name="scanning_notice">请确保接收方已开启互传功能</string>
+    <string name="start_sending_notice">选择一个设备开始发送</string>
 </resources>

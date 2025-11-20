@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -58,7 +61,6 @@ import moe.reimu.catshare.utils.ServiceState
 import moe.reimu.catshare.utils.TAG
 import moe.reimu.catshare.utils.registerInternalBroadcastReceiver
 import rikka.shizuku.Shizuku
-import java.util.ArrayList
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -208,68 +210,112 @@ fun MainActivityContent() {
     }
 
     Scaffold(topBar = {
-        TopAppBar(title = { Text(text = stringResource(R.string.app_name)) }, actions = {
-            IconButton(onClick = {
-                context.startActivity(Intent(context, SettingsActivity::class.java))
-            }) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = stringResource(R.string.title_activity_settings)
+        TopAppBar(
+            title = {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.headlineSmall
                 )
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+            actions = {
+                IconButton(onClick = {
+                    context.startActivity(Intent(context, SettingsActivity::class.java))
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = stringResource(R.string.title_activity_settings),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-        })
+        )
     }) { innerPadding ->
         LazyColumn(
             modifier = Modifier.padding(innerPadding),
             state = listState,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(
+                horizontal = 16.dp,
+                vertical = 16.dp),
         ) {
             item {
                 DefaultCard(onClick = {
                     pickFilesLauncher.launch()
                 }) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier
+                            .padding(20.dp)
+                            .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        MyIcon(Icons.Filled.Share)
+                        Icon(
+                            imageVector = Icons.Filled.Share,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .padding(end = 20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                         Column {
                             Text(
                                 text = stringResource(R.string.send),
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = stringResource(R.string.send_desc),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                 }
-
             }
             item {
                 DefaultCard {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier
+                            .padding(20.dp)
+                            .fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        MyIcon(ImageVector.vectorResource(R.drawable.ic_bluetooth_searching))
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.ic_bluetooth_searching),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .padding(end = 20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = stringResource(R.string.discoverable),
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = stringResource(R.string.discoverable_desc),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(checked = checked, onCheckedChange = {
-                            if (it) {
-                                GattServerService.start(context)
-                            } else {
-                                GattServerService.stop(context)
-                            }
-                        }, modifier = Modifier.padding(start = 8.dp))
+                        Switch(
+                            checked = checked,
+                            onCheckedChange = {
+                                if (it) {
+                                    GattServerService.start(context)
+                                } else {
+                                    GattServerService.stop(context)
+                                }
+                            },
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
                     }
                 }
             }
@@ -286,33 +332,47 @@ fun MainActivityContent() {
                         }
                     }) {
                         Row(
-                            modifier = Modifier.padding(16.dp),
+                            modifier = Modifier
+                                .padding(20.dp)
+                                .fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            MyIcon(
-                                if (shizukuAvailable && shizukuGranted) {
+                            val iconColor = when {
+                                shizukuAvailable && shizukuGranted -> MaterialTheme.colorScheme.primary
+                                shizukuAvailable -> MaterialTheme.colorScheme.tertiary
+                                else -> MaterialTheme.colorScheme.error
+                            }
+
+                            Icon(
+                                imageVector = if (shizukuAvailable && shizukuGranted) {
                                     ImageVector.vectorResource(R.drawable.ic_done)
                                 } else {
                                     ImageVector.vectorResource(R.drawable.ic_close)
-                                }
+                                },
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .padding(end = 20.dp),
+                                tint = iconColor
                             )
                             Column {
                                 Text(
                                     text = stringResource(
                                         if (shizukuAvailable) {
-                                            if (shizukuGranted) {
-                                                R.string.shizuku_available
-                                            } else {
-                                                R.string.shizuku_not_granted
-                                            }
+                                            if (shizukuGranted) R.string.shizuku_available
+                                            else R.string.shizuku_not_granted
                                         } else {
                                             R.string.shizuku_unavailable
                                         }
                                     ),
-                                    style = MaterialTheme.typography.titleMedium,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = stringResource(R.string.shizuku_desc),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -361,15 +421,4 @@ class ChooseFilesContract : ActivityResultContract<Void?, List<Uri>>() {
 
         return ret
     }
-}
-
-@Composable
-fun MyIcon(imageVector: ImageVector) {
-    Icon(
-        imageVector = imageVector,
-        contentDescription = null,
-        modifier = Modifier
-            .size(48.dp)
-            .padding(end = 16.dp),
-    )
 }

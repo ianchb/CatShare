@@ -7,25 +7,45 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun DefaultCard(
-    modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ), modifier = modifier.fillMaxWidth(), content = content
+        ),
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 4.dp
+        ),
+        shape = MaterialTheme.shapes.large,
+        content = content
     )
 }
 
 @Composable
 fun DefaultCard(
-    onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
-        onClick = onClick, colors = CardDefaults.cardColors(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ), modifier = modifier.fillMaxWidth(), content = content
+        ),
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 8.dp,
+            hoveredElevation = 4.dp
+        ),
+        shape = MaterialTheme.shapes.large,
+        content = content
     )
 }

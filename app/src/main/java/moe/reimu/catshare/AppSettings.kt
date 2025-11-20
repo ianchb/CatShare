@@ -27,4 +27,16 @@ class AppSettings(private val context: Context) {
         set(value) {
             prefs.edit { putBoolean("autoAccept", value) }
         }
+
+    var supports5Ghz: Boolean
+        get() = prefs.getBoolean("supports5Ghz", false)
+        set(value) {
+            prefs.edit { putBoolean("supports5Ghz", value) }
+        }
+
+    var brandId: Int
+        get() = prefs.getInt("brandId", 0)
+        set(value) {
+            prefs.edit { putInt("brandId", value) }
+        }
 }

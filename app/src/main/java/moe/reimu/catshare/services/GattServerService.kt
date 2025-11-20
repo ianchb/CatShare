@@ -27,7 +27,6 @@ import android.os.IBinder
 import android.os.ParcelUuid
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import moe.reimu.catshare.AppSettings
 import moe.reimu.catshare.BleSecurity
@@ -256,17 +255,16 @@ class GattServerService : Service() {
 
     fun startAdv() {
         val advertiser = btAdvertiser ?: return
+        val settings = AppSettings(this@GattServerService)
+        val supports5Ghz = settings.supports5Ghz
+        val brandId = settings.brandId
+        val advertisingUuid = generateAdvertisingUuid(supports5Ghz, brandId.toByte())
 
         val advData = AdvertiseData.Builder().apply {
             addServiceUuid(ParcelUuid(BleUtils.ADV_SERVICE_UUID))
             addServiceData(
-                ParcelUuid.fromString(
-                    String.format(
-                        "000001ff-0000-1000-8000-00805f9b34fb",
-                        java.lang.Byte.valueOf(0),
-                        java.lang.Byte.valueOf(0),
-                    )
-                ), Arrays.copyOfRange(BleUtils.RANDOM_DATA, 0, 6)
+                advertisingUuid,
+                Arrays.copyOfRange(BleUtils.RANDOM_DATA, 0, 6)
             )
         }.build()
         val scanRespData = AdvertiseData.Builder().apply {
@@ -315,6 +313,23 @@ class GattServerService : Service() {
             Log.e(TAG, "Got SecurityException when trying to advertise", e)
             stopSelf()
         }
+    }
+
+    private fun generateAdvertisingUuid(supports5Ghz: Boolean, brandId: Byte): ParcelUuid {
+        // base: 000001ff-0000-1000-8000-00805f9b34fb
+        // 2: 5GHz flag
+        // 3: Brand ID
+
+        val byte2 = if (supports5Ghz) 0x01 else 0x00
+        val byte3 = brandId.toInt() and 0xFF
+
+        val uuidString = String.format(
+            "0000%02x%02x-0000-1000-8000-00805f9b34fb",
+            byte2,
+            byte3
+        )
+
+        return ParcelUuid.fromString(uuidString)
     }
 
     private fun buildGattService(): BluetoothGattService {

@@ -277,7 +277,13 @@ fun MainActivityContent() {
                 }
             }
             item {
-                DefaultCard {
+                DefaultCard(onClick = {
+                    if (checked) {
+                        GattServerService.stop(context)
+                    } else {
+                        GattServerService.start(context)
+                    }
+                }) {
                     Row(
                         modifier = Modifier
                             .padding(20.dp)

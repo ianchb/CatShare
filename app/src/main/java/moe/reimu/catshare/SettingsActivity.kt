@@ -934,7 +934,10 @@ fun SettingsSwitchCard(
     icon: ImageVector,
     modifier: Modifier = Modifier
 ) {
-    DefaultCard(modifier = modifier) {
+    DefaultCard(
+        onClick = { onCheckedChange(!checked) },
+        modifier = modifier
+    ) {
         Row(
             modifier = Modifier
                 .padding(20.dp)

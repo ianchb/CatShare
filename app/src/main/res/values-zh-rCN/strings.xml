@@ -102,7 +102,7 @@
     <string name="custom_id_title">自定义品牌 ID</string>
     <string name="custom_id_desc">请输入自定义 ID（0–255）。\n这将被用于 BLE 广播。</string>
     <string name="brand_id">品牌 ID</string>
-    <string name="custom_id_note">注：重新打开“可见”模式以应用更改</string>
+    <string name="custom_id_note">注：内置的品牌 ID 信息可能不准确，请谨慎设置。</string>
     <string name="error_invalid_number">请输入有效的数字</string>
     <string name="error_id_range">ID 必须在 0 和 255 之间</string>
     <string name="warning_brand_range">ID %1$d 属于 %2$s 的范围。\n此品牌的默认 ID 为 %3$d。</string>

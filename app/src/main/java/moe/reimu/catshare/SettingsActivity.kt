@@ -1,6 +1,9 @@
 package moe.reimu.catshare
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -74,9 +77,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import moe.reimu.catshare.services.GattServerService
 import moe.reimu.catshare.ui.DefaultCard
 import moe.reimu.catshare.ui.theme.CatShareTheme
 import moe.reimu.catshare.utils.DeviceUtils
+import moe.reimu.catshare.utils.ServiceState
+import moe.reimu.catshare.utils.registerInternalBroadcastReceiver
 import java.io.File
 
 class SettingsActivity : ComponentActivity() {
@@ -134,6 +140,31 @@ fun SettingsActivityContent() {
         settings.autoAccept = autoAcceptValue
         settings.supports5Ghz = supports5GhzValue
         settings.brandId = brandIdValue
+
+        var isServiceRunning = false
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action == ServiceState.ACTION_UPDATE_RECEIVER_STATE) {
+                    isServiceRunning = intent.getBooleanExtra("isRunning", false)
+                }
+            }
+        }
+
+        context.registerInternalBroadcastReceiver(
+            receiver,
+            IntentFilter(ServiceState.ACTION_UPDATE_RECEIVER_STATE)
+        )
+        context.sendBroadcast(ServiceState.getQueryIntent())
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            context.unregisterReceiver(receiver)
+            if (isServiceRunning) {
+                GattServerService.stop(context)
+                Handler(Looper.getMainLooper()).postDelayed({
+                    GattServerService.start(context)
+                }, 500)
+            }
+        }, 100)
 
         Toast.makeText(
             context,

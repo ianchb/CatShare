@@ -106,7 +106,7 @@
     <string name="custom_id_title">Custom Brand ID</string>
     <string name="custom_id_desc">Enter a custom brand ID (0–255).\nThis will be used in BLE advertising.</string>
     <string name="brand_id">Brand ID</string>
-    <string name="custom_id_note">Note: Restart discoverable mode to apply changes</string>
+    <string name="custom_id_note">Note: Built-in brand ID information may be inaccurate, please proceed with caution.</string>
     <string name="error_invalid_number">Please enter a valid number</string>
     <string name="error_id_range">ID must be between 0 and 255</string>
     <string name="warning_brand_range">ID %1$d is in %2$s range.\nDefault ID for this brand is %3$d.</string>

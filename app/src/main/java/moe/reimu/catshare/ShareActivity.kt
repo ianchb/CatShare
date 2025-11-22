@@ -322,7 +322,7 @@ fun ShareActivityContent(files: List<FileInfo>) {
 
                     if (discoveredDevices.isNotEmpty()) {
                         Text(
-                            text = "${discoveredDevices.size} found",
+                            text = stringResource(R.string.devices_found, discoveredDevices.size),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

@@ -112,4 +112,5 @@
     <string name="warning_brand_range">ID %1$d is in %2$s range.\nDefault ID for this brand is %3$d.</string>
     <string name="_5ghz_unsupported">Your device does not support 5GHz Wi-Fi, so this feature cannot be enabled</string>
     <string name="_5ghz_suggestion">Your device supports 5GHz Wi-Fi, and it is recommended to enable this feature</string>
+    <string name="devices_found">%1$d device(s)</string>
 </resources>

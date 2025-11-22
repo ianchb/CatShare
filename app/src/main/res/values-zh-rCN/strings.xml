@@ -79,7 +79,7 @@
     <string name="auto_accept_desc">无需确认，自动接收传入文件</string>
     <string name="settings_receiving">接收</string>
     <string name="settings_developer">开发者</string>
-    <string name="catshare_version">基于 CatShare v%1$s</string>
+    <string name="catshare_version">基于 CatShare | v%1$s</string>
     <string name="mutual_transmission_alliance">类原生与海外设备，现已加入互传联盟。</string>
     <string name="device_brand">设备品牌</string>
     <string name="_5ghz_wi_fi">5GHz Wi-Fi 支持</string>

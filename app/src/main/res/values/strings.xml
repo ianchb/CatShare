@@ -83,7 +83,7 @@
     <string name="auto_accept_desc">Automatically accept incoming files without confirmation</string>
     <string name="settings_receiving">Receiving</string>
     <string name="settings_developer">Developer</string>
-    <string name="catshare_version">Based on CatShare v%1$s</string>
+    <string name="catshare_version">Based on CatShare |  v%1$s</string>
     <string name="mutual_transmission_alliance">Designed for Mutual Transmission Alliance.</string>
     <string name="device_brand">Device Brand</string>
     <string name="_5ghz_wi_fi">5GHz Wi-Fi Support</string>

@@ -11,14 +11,14 @@ plugins {
 
 android {
     namespace = "moe.reimu.catshare"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "moe.reimu.catshare"
         minSdk = 29
-        targetSdk = 35
-        versionCode = 7
-        versionName = "1.6"
+        targetSdk = 36
+        versionCode = 8
+        versionName = "1.7"
     }
 
     signingConfigs {
@@ -96,8 +96,8 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    implementation("no.nordicsemi.android.kotlin.ble:client:1.1.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("no.nordicsemi.android.kotlin.ble:client:1.3.1")
 
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)

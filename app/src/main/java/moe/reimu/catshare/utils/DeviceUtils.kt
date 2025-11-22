@@ -39,13 +39,38 @@ object DeviceUtils {
                 "Meizu"
             }
 
+            in 60..69 -> {
+                "Nubia"
+            }
+
             in 70..75 -> {
                 "Samsung"
+            }
+
+            in 80..89 -> {
+                "ZTE"
+            }
+
+            in 90..95 -> {
+                "Smartisan"
             }
 
             in 100..109 -> {
                 "Lenovo"
             }
+
+            in 110..119 -> {
+                "Motorola"
+            }
+
+            in 120..129 -> {
+                "NIO"
+            }
+
+            in 140..149 -> {
+                "Honor"
+            }
+
 
             else -> null
         }
@@ -60,8 +85,14 @@ object DeviceUtils {
             30 to "Xiaomi",
             41 to "OnePlus",
             50 to "Meizu",
+            60 to "Nubia",
             70 to "Samsung",
-            100 to "Lenovo"
+            80 to "ZTE",
+            90 to "Smartisan",
+            100 to "Lenovo",
+            110 to "Motorola",
+            120 to "NIO",
+            140 to "Honor"
         )
     }
 
@@ -81,8 +112,14 @@ object DeviceUtils {
             in 30..39 -> 30  // Xiaomi
             in 41..45 -> 41  // OnePlus
             in 50..59 -> 50  // Meizu
+            in 60..69 -> 60  // Nubia
             in 70..75 -> 70  // Samsung
+            in 80..89 -> 80  // ZTE
+            in 90..95 -> 90  // Smartisan
             in 100..109 -> 100  // Lenovo
+            in 110..119 -> 110  // Motorola
+            in 120..129 -> 120  // NIO
+            in 140..149 -> 140  // Honor
             else -> id
         }
     }

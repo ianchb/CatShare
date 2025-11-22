@@ -106,4 +106,6 @@
     <string name="error_invalid_number">请输入有效的数字</string>
     <string name="error_id_range">ID 必须在 0 和 255 之间</string>
     <string name="warning_brand_range">ID %1$d 属于 %2$s 的范围。\n此品牌的默认 ID 为 %3$d。</string>
+    <string name="_5ghz_unsupported">您的设备不支持 5GHz Wi-Fi，无法启用此功能</string>
+    <string name="_5ghz_suggestion">您的设备支持 5GHz Wi-Fi，建议启用此功能</string>
 </resources>

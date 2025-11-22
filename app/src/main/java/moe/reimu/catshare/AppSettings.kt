@@ -3,6 +3,7 @@ package moe.reimu.catshare
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import moe.reimu.catshare.utils.WifiUtils
 
 class AppSettings(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("app", Context.MODE_PRIVATE)
@@ -29,7 +30,14 @@ class AppSettings(private val context: Context) {
         }
 
     var supports5Ghz: Boolean
-        get() = prefs.getBoolean("supports5Ghz", false)
+        get() {
+            if (!prefs.contains("supports5Ghz")) {
+                val hardwareSupport = WifiUtils.is5GHzBandSupported(context)
+                prefs.edit { putBoolean("supports5Ghz", hardwareSupport) }
+                return hardwareSupport
+            }
+            return prefs.getBoolean("supports5Ghz", false)
+        }
         set(value) {
             prefs.edit { putBoolean("supports5Ghz", value) }
         }

@@ -165,6 +165,9 @@ class P2pReceiverService : BaseP2pService() {
 
         val info = intent.getParcelableExtra<P2pInfo>("p2p_info") ?: return START_NOT_STICKY
         val localTaskId = Random.nextInt()
+
+        var transferSuccessful = false
+
         val job = CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
             try {
                 startForeground(
@@ -172,7 +175,7 @@ class P2pReceiverService : BaseP2pService() {
                     createPrepareNotification(getString(R.string.noti_connecting)),
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                 )
-                runReceive(info, localTaskId)
+                transferSuccessful = runReceive(info, localTaskId)
             } catch (e: CancelledByUserException) {
                 Log.i(TAG, "Cancelled by user")
                 notificationManager.notify(
@@ -180,11 +183,15 @@ class P2pReceiverService : BaseP2pService() {
                     createFailedNotification(e)
                 )
             } catch (e: Throwable) {
-                Log.e(TAG, "Failed to process task", e)
-                notificationManager.notify(
-                    Random.nextInt(),
-                    createFailedNotification(e)
-                )
+                if (transferSuccessful && e is java.io.EOFException) {
+                    Log.i(TAG, "Transfer completed successfully, ignoring post-transfer exception: ${e.message}")
+                } else {
+                    Log.e(TAG, "Failed to process task", e)
+                    notificationManager.notify(
+                        Random.nextInt(),
+                        createFailedNotification(e)
+                    )
+                }
             } finally {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 MyApplication.getInstance().clearBusy()
@@ -379,7 +386,7 @@ class P2pReceiverService : BaseP2pService() {
     }
 
     @SuppressLint("MissingPermission")
-    private suspend fun runReceive(p2pInfo: P2pInfo, localTaskId: Int) = coroutineScope {
+    private suspend fun runReceive(p2pInfo: P2pInfo, localTaskId: Int): Boolean = coroutineScope {
         val client = HttpClient(OkHttp) {
             install(WebSockets)
             engine {
@@ -402,6 +409,8 @@ class P2pReceiverService : BaseP2pService() {
             .setNetworkName(p2pInfo.ssid)
             .setPassphrase(p2pInfo.psk)
             .build()
+
+        var filesReceived = false
 
         client.use { client ->
             p2pFuture = CompletableDeferred()
@@ -488,6 +497,7 @@ class P2pReceiverService : BaseP2pService() {
 
                         wsSession.sendStatusIgnoreException(99, taskId, 1, "ok")
                         delay(1000)
+                        filesReceived = true
                         return@async
                     }
 
@@ -519,6 +529,8 @@ class P2pReceiverService : BaseP2pService() {
                     }
 
                     if (files.isNotEmpty()) {
+                        filesReceived = true
+
                         notificationManager.notify(
                             Random.nextInt(), createCompletedNotification(
                                 senderName, files, files.size != fileCount
@@ -531,69 +543,77 @@ class P2pReceiverService : BaseP2pService() {
                     }
                 }
 
-                while (true) {
-                    val run = select {
-                        wsSession.incoming.onReceive { frame ->
-                            val text = (frame as? Frame.Text)?.readText()
-                                ?: throw IllegalArgumentException("Got non-text frame")
-                            val message = WebSocketMessage.fromText(text)
-                                ?: throw IllegalArgumentException("Failed to parse message")
+                try {
+                    while (true) {
+                        val run = select {
+                            wsSession.incoming.onReceive { frame ->
+                                val text = (frame as? Frame.Text)?.readText()
+                                    ?: throw IllegalArgumentException("Got non-text frame")
+                                val message = WebSocketMessage.fromText(text)
+                                    ?: throw IllegalArgumentException("Failed to parse message")
 
-                            Log.d(TAG, "WS message: $message")
+                                Log.d(TAG, "WS message: $message")
 
-                            if (message.type != "action") {
-                                return@onReceive true// We only care about `action`
-                            }
-
-                            val payload = message.payload ?: return@onReceive true
-
-                            val r = when (message.name.lowercase()) {
-                                "versionnegotiation" -> {
-                                    val inVersion = payload.optInt("version", 1)
-                                    val currentVersion = min(inVersion, 1)
-
-                                    JSONObject()
-                                        .put("version", currentVersion)
-                                        .put("threadLimit", 5)
+                                if (message.type != "action") {
+                                    return@onReceive true// We only care about `action`
                                 }
 
-                                "sendrequest" -> {
-                                    sendRequestFuture.complete(payload)
-                                    null
-                                }
+                                val payload = message.payload ?: return@onReceive true
 
-                                "status" -> {
-                                    statusFuture.complete(
-                                        Pair(
-                                            payload.optInt("type"), payload.optString("reason")
+                                val r = when (message.name.lowercase()) {
+                                    "versionnegotiation" -> {
+                                        val inVersion = payload.optInt("version", 1)
+                                        val currentVersion = min(inVersion, 1)
+
+                                        JSONObject()
+                                            .put("version", currentVersion)
+                                            .put("threadLimit", 5)
+                                    }
+
+                                    "sendrequest" -> {
+                                        sendRequestFuture.complete(payload)
+                                        null
+                                    }
+
+                                    "status" -> {
+                                        statusFuture.complete(
+                                            Pair(
+                                                payload.optInt("type"), payload.optString("reason")
+                                            )
                                         )
-                                    )
-                                    null
+                                        null
+                                    }
+
+                                    else -> {
+                                        null
+                                    }
                                 }
 
-                                else -> {
-                                    null
+                                val ack = WebSocketMessage("ack", message.id, message.name, r)
+                                wsSession.send(Frame.Text(ack.toText()))
+                                true
+                            }
+                            downloadJob.onAwait {
+                                // Completed successfully
+                                false
+                            }
+                            statusFuture.onAwait { status ->
+                                if (status.first == 3 && status.second == "user refuse") {
+                                    throw CancelledByUserException(true)
                                 }
+                                throw RuntimeException("Transfer terminated with $status")
                             }
+                        }
 
-                            val ack = WebSocketMessage("ack", message.id, message.name, r)
-                            wsSession.send(Frame.Text(ack.toText()))
-                            true
-                        }
-                        downloadJob.onAwait {
-                            // Completed successfully
-                            false
-                        }
-                        statusFuture.onAwait { status ->
-                            if (status.first == 3 && status.second == "user refuse") {
-                                throw CancelledByUserException(true)
-                            }
-                            throw RuntimeException("Transfer terminated with $status")
+                        if (!run) {
+                            break
                         }
                     }
-
-                    if (!run) {
-                        break
+                } catch (e: Exception) {
+                    if (filesReceived && e is java.io.EOFException) {
+                        Log.i(TAG, "Files received successfully, ignoring post-transfer network error: ${e.message}")
+                    } else {
+                        throw e
                     }
                 }
             } finally {
@@ -601,6 +621,8 @@ class P2pReceiverService : BaseP2pService() {
                 p2pManager.cancelConnect(p2pChannel, null)
             }
         }
+
+        return@coroutineScope filesReceived
     }
 
     private fun saveArchive(

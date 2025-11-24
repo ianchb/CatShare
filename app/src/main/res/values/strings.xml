@@ -83,7 +83,7 @@
     <string name="auto_accept_desc">Automatically accept incoming files without confirmation</string>
     <string name="settings_receiving">Receiving</string>
     <string name="settings_developer">Developer</string>
-    <string name="catshare_version">Based on CatShare |  v%1$s</string>
+    <string name="catshare_version">Based on CatShare | v%1$s</string>
     <string name="mutual_transmission_alliance">Designed for Mutual Transmission Alliance.</string>
     <string name="device_brand">Device Brand</string>
     <string name="_5ghz_wi_fi">5GHz Wi-Fi Support</string>
@@ -113,4 +113,10 @@
     <string name="_5ghz_unsupported">Your device does not support 5GHz Wi-Fi, so this feature cannot be enabled</string>
     <string name="_5ghz_suggestion">Your device supports 5GHz Wi-Fi, and it is recommended to enable this feature</string>
     <string name="devices_found">%1$d device(s)</string>
+    <string name="settings_sending">Sending</string>
+    <string name="force_send_5ghz_name">Force Enable 5GHz When Sending</string>
+    <string name="force_send_5ghz_desc">Always attempt to use 5GHz when sending files, even if the recipient device doesn\'t advertise 5GHz support</string>
+    <string name="force_send_5ghz_warning">This may help improve the efficiency of sending to devices that support 5GHz but are not reporting correctly, such as Xiaomi devices, but improper use may result in transmission failure!</string>
+    <string name="use_5ghz_this_time">Enable 5GHz for this transfer</string>
+    <string name="force_5ghz_hint" >Only enable if you\'re sure the device supports 5GHz</string>
 </resources>

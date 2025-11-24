@@ -46,7 +46,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import moe.reimu.catshare.AppSettings
 import moe.reimu.catshare.BleSecurity
@@ -375,7 +374,7 @@ class P2pSenderService : BaseP2pService() {
             val psk = DeviceUtils.getRandomChars(8)
 
             val p2pConfig = WifiP2pConfig.Builder().setGroupOperatingBand(
-                if (task.device.supports5Ghz) {
+                if (task.force5Ghz || task.device.supports5Ghz) {
                     WifiP2pConfig.GROUP_OWNER_BAND_AUTO
                 } else {
                     WifiP2pConfig.GROUP_OWNER_BAND_2GHZ

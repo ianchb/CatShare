@@ -46,6 +46,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -130,13 +131,15 @@ fun SettingsActivityContent() {
     var showCustomIdDialog by remember { mutableStateOf(false) }
     var hasChanges by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
+    var forceSend5GhzValue by remember { mutableStateOf(settings.forceSend5Ghz) }
 
-    LaunchedEffect(deviceNameValue, verboseValue, autoAcceptValue, supports5GhzValue, brandIdValue) {
+    LaunchedEffect(deviceNameValue, verboseValue, autoAcceptValue, supports5GhzValue, brandIdValue, forceSend5GhzValue) {
         hasChanges = deviceNameValue != settings.deviceName ||
                 verboseValue != settings.verbose ||
                 autoAcceptValue != settings.autoAccept ||
                 supports5GhzValue != settings.supports5Ghz ||
-                brandIdValue != settings.brandId
+                brandIdValue != settings.brandId ||
+                forceSend5GhzValue != settings.forceSend5Ghz
     }
 
     val saveSettings: () -> Unit = {
@@ -148,6 +151,7 @@ fun SettingsActivityContent() {
         settings.autoAccept = autoAcceptValue
         settings.supports5Ghz = supports5GhzValue
         settings.brandId = brandIdValue
+        settings.forceSend5Ghz = forceSend5GhzValue
 
         var isServiceRunning = false
         val receiver = object : BroadcastReceiver() {
@@ -406,6 +410,32 @@ fun SettingsActivityContent() {
                         }
                     )
                 }
+            }
+
+            item {
+                Text(
+                    text = stringResource(R.string.settings_sending),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp, top = 16.dp, bottom = 4.dp)
+                )
+            }
+
+            item {
+                SettingsSwitchCard(
+                    title = stringResource(R.string.force_send_5ghz_name),
+                    description = stringResource(R.string.force_send_5ghz_desc),
+                    checked = forceSend5GhzValue,
+                    onCheckedChange = { forceSend5GhzValue = it },
+                    icon = ImageVector.vectorResource(R.drawable.ic_wifi),
+                    modifier = Modifier.padding(top = 12.dp),
+                    enabled = hardware5GHzSupported,
+                    warningMessage = if (!hardware5GHzSupported) {
+                        stringResource(R.string._5ghz_unsupported)
+                    } else if (forceSend5GhzValue) {
+                        stringResource(R.string.force_send_5ghz_warning)
+                    } else null
+                )
             }
 
             item {
@@ -997,7 +1027,19 @@ fun SettingsSwitchCard(
                 )
             }
 
-            if (!checked && warningMessage != null) {
+            AnimatedVisibility(
+                visible = warningMessage != null,
+                enter = expandVertically(
+                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                ) + fadeIn(
+                    animationSpec = tween(durationMillis = 300)
+                ),
+                exit = shrinkVertically(
+                    animationSpec = tween(durationMillis = 250, easing = FastOutLinearInEasing)
+                ) + fadeOut(
+                    animationSpec = tween(durationMillis = 250)
+                )
+            ) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
@@ -1010,14 +1052,14 @@ fun SettingsSwitchCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.Info,
+                            imageVector = Icons.Outlined.Warning,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = warningMessage,
+                            text = warningMessage ?: "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -1026,7 +1068,7 @@ fun SettingsSwitchCard(
             }
 
             AnimatedVisibility(
-                visible = !checked && suggestionMessage != null,
+                visible = suggestionMessage != null,
                 enter = expandVertically(
                     animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
                 ) + fadeIn(

@@ -47,4 +47,10 @@ class AppSettings(private val context: Context) {
         set(value) {
             prefs.edit { putInt("brandId", value) }
         }
+
+    var forceSend5Ghz: Boolean
+        get() = prefs.getBoolean("forceSend5Ghz", false)
+        set(value) {
+            prefs.edit { putBoolean("forceSend5Ghz", value) }
+        }
 }

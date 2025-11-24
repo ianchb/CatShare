@@ -109,4 +109,10 @@
     <string name="_5ghz_unsupported">您的设备不支持 5GHz Wi-Fi，无法启用此功能</string>
     <string name="_5ghz_suggestion">您的设备支持 5GHz Wi-Fi，建议启用此功能</string>
     <string name="devices_found">%1$d 个设备</string>
+    <string name="settings_sending">发送</string>
+    <string name="force_send_5ghz_name">发送时强制启用 5GHz</string>
+    <string name="force_send_5ghz_desc">发送文件时始终尝试使用 5GHz，即使接收端设备未广播 5GHz 支持</string>
+    <string name="force_send_5ghz_warning">这可能有助于提高向支持 5GHz 但未正确报告的设备（例如 Xiaomi 设备）发送的效率，但错误设置可能导致传输失败!</string>
+    <string name="use_5ghz_this_time">本次传输启用 5GHz</string>
+    <string name="force_5ghz_hint" >仅在确定对方设备支持 5GHz 时启用</string>
 </resources>

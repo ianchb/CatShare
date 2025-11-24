@@ -31,6 +31,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -50,22 +52,27 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -86,6 +93,7 @@ import moe.reimu.catshare.utils.DeviceUtils
 import moe.reimu.catshare.utils.NotificationUtils
 import moe.reimu.catshare.utils.ShizukuUtils
 import moe.reimu.catshare.utils.TAG
+import moe.reimu.catshare.utils.WifiUtils
 import java.nio.ByteBuffer
 import kotlin.random.Random
 
@@ -186,6 +194,9 @@ fun ShareActivityContent(files: List<FileInfo>) {
     val context = LocalContext.current
     val discoveredDevices = deviceScanner()
     val listState = rememberLazyListState()
+    val settings = remember { AppSettings(context) }
+    val hardware5GHzSupported = remember { WifiUtils.is5GHzBandSupported(context) }
+    val deviceForce5GhzStates = remember { mutableStateMapOf<String, Boolean>() }
 
     BackHandler {
         (context as? ComponentActivity)?.finish()
@@ -266,7 +277,7 @@ fun ShareActivityContent(files: List<FileInfo>) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = ImageVector.vectorResource(R.drawable.ic_bluetooth_searching),
+                                    imageVector = ImageVector.vectorResource(R.drawable.ic_attach_file),
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(24.dp)
@@ -378,6 +389,10 @@ fun ShareActivityContent(files: List<FileInfo>) {
                 }
             } else {
                 items(discoveredDevices, key = { it.id }) { device ->
+                    val deviceForce5Ghz = deviceForce5GhzStates.getOrPut(device.id) {
+                        settings.forceSend5Ghz
+                    }
+
                     AnimatedVisibility(
                         visible = true,
                         enter = fadeIn() + slideInVertically(
@@ -391,7 +406,8 @@ fun ShareActivityContent(files: List<FileInfo>) {
                             val task = TaskInfo(
                                 id = Random.nextInt(),
                                 device = device,
-                                files = files
+                                files = files,
+                                force5Ghz = deviceForce5Ghz
                             )
                             P2pSenderService.startTaskChecked(context, task)
 
@@ -448,6 +464,83 @@ fun ShareActivityContent(files: List<FileInfo>) {
                                                 )
                                             }
                                         }
+                                    }
+                                }
+                            }
+                            if (hardware5GHzSupported && !device.supports5Ghz) {
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                    thickness = 1.dp
+                                )
+
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(
+                                            indication = null,
+                                            interactionSource = remember { MutableInteractionSource() }
+                                        ) {
+                                            deviceForce5GhzStates[device.id] = !deviceForce5Ghz
+                                        },
+                                    color = if (deviceForce5Ghz) {
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                    } else {
+                                        Color.Transparent
+                                    },
+                                    shape = MaterialTheme.shapes.medium
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = ImageVector.vectorResource(R.drawable.ic_wifi),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                            tint = if (deviceForce5Ghz) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            }
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = stringResource(R.string.use_5ghz_this_time),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = if (deviceForce5Ghz) {
+                                                    MaterialTheme.colorScheme.onSurface
+                                                } else {
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                                },
+                                                fontWeight = if (deviceForce5Ghz) {
+                                                    androidx.compose.ui.text.font.FontWeight.Medium
+                                                } else {
+                                                    androidx.compose.ui.text.font.FontWeight.Normal
+                                                }
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = stringResource(R.string.force_5ghz_hint),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                            )
+                                        }
+                                        Switch(
+                                            checked = deviceForce5Ghz,
+                                            onCheckedChange = {
+                                                deviceForce5GhzStates[device.id] = it
+                                            },
+                                            modifier = Modifier.padding(start = 8.dp),
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                                            )
+                                        )
                                     }
                                 }
                             }

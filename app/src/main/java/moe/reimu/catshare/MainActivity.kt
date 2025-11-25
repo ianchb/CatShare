@@ -329,12 +329,14 @@ fun MainActivityContent() {
             if (!localMacAddressGranted) {
                 item {
                     DefaultCard(onClick = {
-                        if (!shizukuGranted) {
+                        if (shizukuAvailable && !shizukuGranted) {
                             try {
                                 Shizuku.requestPermission(0)
                             } catch (e: Throwable) {
                                 e.printStackTrace()
                             }
+                        } else if (!shizukuAvailable) {
+                            context.startActivity(Intent(context, SettingsActivity::class.java))
                         }
                     }) {
                         Row(

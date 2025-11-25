@@ -119,4 +119,12 @@
     <string name="force_send_5ghz_warning">This may help improve the efficiency of sending to devices that support 5GHz but are not reporting correctly, such as Xiaomi devices, but improper use may result in transmission failure!</string>
     <string name="use_5ghz_this_time">Enable 5GHz for this transfer</string>
     <string name="force_5ghz_hint" >Only enable if you\'re sure the device supports 5GHz</string>
+    <string name="mac_address_override_name" >MAC Address Override</string>
+    <string name="mac_address_override_not_set" >Not set</string>
+    <string name="mac_address_override_hint" >The MAC address cannot be automatically retrieved. Please enter it manually. Incorrect input will prevent the file from being sent properly.</string>
+    <string name="mac_address_override_warning" >The MAC address can now be automatically retrieved, manual override settings are recommended to be removed! Incorrect input will prevent the file from being sent properly.</string>
+    <string name="mac_address_override_label" >MAC Address</string>
+    <string name="mac_address_override_dialog_desc">Please enter the MAC address (format: 00:00:00:00:00:00), leave it blank to use the automatically retrieved one.</string>
+    <string name="error_invalid_mac_format" >Please enter a valid MAC address</string>
+    <string name="mac_address_override_note" >Note: Please enter the MAC address of p2p0 interface on this device.</string>
 </resources>

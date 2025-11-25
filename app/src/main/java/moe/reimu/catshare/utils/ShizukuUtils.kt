@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.IBinder
 import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
+import moe.reimu.catshare.AppSettings
 import moe.reimu.catshare.BuildConfig
 import moe.reimu.catshare.IMacAddressService
 import moe.reimu.catshare.services.MacAddressService
@@ -89,6 +90,14 @@ object ShizukuUtils {
     }
 
     fun getMacAddress(context: Context, name: String, l: (String?) -> Unit) {
+        val settings = AppSettings(context)
+        val overrideMac = settings.macAddressOverride
+        if (overrideMac.isNotEmpty() && isValidMacAddress(overrideMac)) {
+            Log.d(TAG, "Using overridden MAC address: $overrideMac")
+            l(overrideMac)
+            return
+        }
+
         if (context.checkSelfPermission("android.permission.LOCAL_MAC_ADDRESS") == PackageManager.PERMISSION_GRANTED) {
             Log.d(TAG, "Permission granted, using native method")
             l(nativeGetMacAddressByName(name))
@@ -127,5 +136,15 @@ object ShizukuUtils {
             fut.complete(it)
         }
         return fut.await()
+    }
+
+    fun isValidMacAddress(mac: String): Boolean {
+        val macPattern = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$".toRegex()
+        return macPattern.matches(mac)
+    }
+
+    fun canGetMacAddressAutomatically(context: Context): Boolean {
+        return context.checkSelfPermission("android.permission.LOCAL_MAC_ADDRESS") == PackageManager.PERMISSION_GRANTED ||
+                (Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED)
     }
 }

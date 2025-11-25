@@ -89,6 +89,7 @@ import moe.reimu.catshare.ui.DefaultCard
 import moe.reimu.catshare.ui.theme.CatShareTheme
 import moe.reimu.catshare.utils.DeviceUtils
 import moe.reimu.catshare.utils.ServiceState
+import moe.reimu.catshare.utils.ShizukuUtils
 import moe.reimu.catshare.utils.WifiUtils
 import moe.reimu.catshare.utils.registerInternalBroadcastReceiver
 import java.io.File
@@ -132,14 +133,17 @@ fun SettingsActivityContent() {
     var hasChanges by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
     var forceSend5GhzValue by remember { mutableStateOf(settings.forceSend5Ghz) }
+    var macAddressOverrideValue by remember { mutableStateOf(settings.macAddressOverride) }
+    var showMacAddressDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(deviceNameValue, verboseValue, autoAcceptValue, supports5GhzValue, brandIdValue, forceSend5GhzValue) {
+    LaunchedEffect(deviceNameValue, verboseValue, autoAcceptValue, supports5GhzValue, brandIdValue, forceSend5GhzValue, macAddressOverrideValue) {
         hasChanges = deviceNameValue != settings.deviceName ||
                 verboseValue != settings.verbose ||
                 autoAcceptValue != settings.autoAccept ||
                 supports5GhzValue != settings.supports5Ghz ||
                 brandIdValue != settings.brandId ||
-                forceSend5GhzValue != settings.forceSend5Ghz
+                forceSend5GhzValue != settings.forceSend5Ghz ||
+                macAddressOverrideValue != settings.macAddressOverride
     }
 
     val saveSettings: () -> Unit = {
@@ -147,6 +151,7 @@ fun SettingsActivityContent() {
         if (nameValue.isNotBlank()) {
             settings.deviceName = nameValue
         }
+        settings.macAddressOverride = macAddressOverrideValue
         settings.verbose = verboseValue
         settings.autoAccept = autoAcceptValue
         settings.supports5Ghz = supports5GhzValue
@@ -436,6 +441,37 @@ fun SettingsActivityContent() {
                         stringResource(R.string.force_send_5ghz_warning)
                     } else null
                 )
+
+                val canAutoGetMac = remember {
+                    ShizukuUtils.canGetMacAddressAutomatically(context)
+                }
+
+                SettingsInfoCard(
+                    title = stringResource(R.string.mac_address_override_name),
+                    description = macAddressOverrideValue.ifEmpty {
+                        stringResource(R.string.mac_address_override_not_set)
+                    },
+                    icon = ImageVector.vectorResource(R.drawable.ic_difference),
+                    onClick = { showMacAddressDialog = true },
+                    modifier = Modifier.padding(top = 12.dp),
+                    hintMessage = if (!canAutoGetMac) {
+                        stringResource(R.string.mac_address_override_hint)
+                    } else null,
+                    warningMessage = if (canAutoGetMac && macAddressOverrideValue.isNotEmpty()) {
+                        stringResource(R.string.mac_address_override_warning)
+                    } else null
+                )
+
+                if (showMacAddressDialog) {
+                    MacAddressDialog(
+                        currentMacAddress = macAddressOverrideValue,
+                        onDismiss = { showMacAddressDialog = false },
+                        onConfirm = { newMac ->
+                            macAddressOverrideValue = newMac
+                            showMacAddressDialog = false
+                        }
+                    )
+                }
             }
 
             item {
@@ -1110,6 +1146,271 @@ fun SettingsSwitchCard(
             }
         }
     }
+}
+
+@Composable
+fun SettingsInfoCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    hintMessage: String? = null,
+    warningMessage: String? = null
+) {
+    DefaultCard(
+        onClick = onClick,
+        modifier = modifier
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .padding(end = 20.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            AnimatedVisibility(
+                visible = warningMessage != null,
+                enter = expandVertically(
+                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                ) + fadeIn(
+                    animationSpec = tween(durationMillis = 300)
+                ),
+                exit = shrinkVertically(
+                    animationSpec = tween(durationMillis = 250, easing = FastOutLinearInEasing)
+                ) + fadeOut(
+                    animationSpec = tween(durationMillis = 250)
+                )
+            ) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = warningMessage ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = hintMessage != null,
+                enter = expandVertically(
+                    animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                ) + fadeIn(
+                    animationSpec = tween(durationMillis = 300)
+                ),
+                exit = shrinkVertically(
+                    animationSpec = tween(durationMillis = 250, easing = FastOutLinearInEasing)
+                ) + fadeOut(
+                    animationSpec = tween(durationMillis = 250)
+                )
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = hintMessage ?: "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MacAddressDialog(
+    currentMacAddress: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var inputValue by remember { mutableStateOf(currentMacAddress) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val errorInvalidFormat = stringResource(R.string.error_invalid_mac_format)
+
+    fun validateInput(input: String): String? {
+        errorMessage = null
+
+        if (input.isEmpty()) {
+            return ""
+        }
+
+        return if (ShizukuUtils.isValidMacAddress(input)) {
+            input
+        } else {
+            errorMessage = errorInvalidFormat
+            null
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Outlined.Edit,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
+        },
+        title = {
+            Text(
+                text = stringResource(R.string.mac_address_override_name),
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.mac_address_override_dialog_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                OutlinedTextField(
+                    value = inputValue,
+                    onValueChange = {
+                        inputValue = it
+                        validateInput(it)
+                    },
+                    label = { Text(stringResource(R.string.mac_address_override_label)) },
+                    placeholder = { Text("00:00:00:00:00:00") },
+                    singleLine = true,
+                    isError = errorMessage != null,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Ascii,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            val validated = validateInput(inputValue)
+                            if (validated != null && errorMessage == null) {
+                                onConfirm(validated)
+                            }
+                        }
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        errorBorderColor = MaterialTheme.colorScheme.error
+                    )
+                )
+
+                if (errorMessage != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = errorMessage!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
+                Text(
+                    text = stringResource(R.string.mac_address_override_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val validated = validateInput(inputValue)
+                    if (validated != null && errorMessage == null) {
+                        onConfirm(validated)
+                    }
+                },
+                enabled = errorMessage == null
+            ) {
+                Text(stringResource(R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp
+    )
 }
 
 private fun buildBrandDisplayText(brandId: Int): String {

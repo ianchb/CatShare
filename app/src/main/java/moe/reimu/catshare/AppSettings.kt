@@ -53,4 +53,10 @@ class AppSettings(private val context: Context) {
         set(value) {
             prefs.edit { putBoolean("forceSend5Ghz", value) }
         }
+
+    var macAddressOverride: String
+        get() = prefs.getString("macAddressOverride", "") ?: ""
+        set(value) {
+            prefs.edit { putString("macAddressOverride", value) }
+        }
 }

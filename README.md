@@ -1,4 +1,7 @@
-# CatShare
+# CatShare (Modified)
+⚠**请注意，这不是原版项目，如遇问题，请不要前往原仓库反馈！  
+Please note that this is not the original project. In case of any issues, please do not go to the original repo to provide feedback!**
+
 类原生 & 海外设备，现已加入互传联盟。
 
 Android 目前已不再支持非系统应用获取手机的 MAC 地址等无法重置的序列号，但由于各品牌的互传功能通常为系统应用，互传联盟协议将设备的 MAC 地址作为其认证信息的一部分，目前暂时无法绕过。

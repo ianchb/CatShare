@@ -114,7 +114,7 @@
     <string name="_5ghz_suggestion">Your device supports 5GHz Wi-Fi, and it is recommended to enable this feature</string>
     <string name="devices_found">%1$d device(s)</string>
     <string name="settings_sending">Sending</string>
-    <string name="force_send_5ghz_name">Force Enable 5GHz When Sending</string>
+    <string name="force_send_5ghz_name">Always Enable 5GHz When Sending</string>
     <string name="force_send_5ghz_desc">Always attempt to use 5GHz when sending files, even if the recipient device doesn\'t advertise 5GHz support</string>
     <string name="force_send_5ghz_warning">This may help improve the efficiency of sending to devices that support 5GHz but are not reporting correctly, such as Xiaomi devices, but improper use may result in transmission failure!</string>
     <string name="use_5ghz_this_time">Enable 5GHz for this transfer</string>
@@ -127,4 +127,17 @@
     <string name="mac_address_override_dialog_desc">Please enter the MAC address (format: 00:00:00:00:00:00), leave it blank to use the automatically retrieved one.</string>
     <string name="error_invalid_mac_format" >Please enter a valid MAC address</string>
     <string name="mac_address_override_note" >Note: Please enter the MAC address of p2p0 interface on this device.</string>
+    <string name="app_tagline">Fast file transfer with Mutual Transmission Alliance devices</string>
+    <string name="receiver_on">Discoverable</string>
+    <string name="receiver_off">Not discoverable</string>
+    <string name="enable_receiver">Turn on</string>
+    <string name="disable_receiver">Turn off</string>
+    <string name="share_with">Send to %1$s</string>
+    <string name="recipients_nearby">Nearby devices</string>
+    <string name="recipients_nearby_desc">Turn on discoverable mode on the receiving device</string>
+    <string name="no_devices_yet">Looking for nearby devices…</string>
+    <string name="sending_to">Sending to %1$s</string>
+    <string name="files_count_more">+%1$d more</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_about">About</string>
 </resources>

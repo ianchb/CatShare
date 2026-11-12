@@ -4,7 +4,12 @@ kotlin = "2.2.0"
 coreKtx = "1.16.0"
 lifecycleRuntimeKtx = "2.9.2"
 activityCompose = "1.10.1"
-composeBom = "2025.07.00"
+composeBom = "2025.09.00"
+# Material 3 Expressive components (ButtonGroup, FloatingToolbar, ToggleButton,
+# SplitButton, LoadingIndicator, MaterialShapes) are only published from
+# 1.5.0-alpha15 onwards. 1.5.0-alpha18 still only requires compileSdk 35, so it
+# works with the AGP/SDK versions this project already uses.
+material3Expressive = "1.5.0-alpha18"
 ktor = "3.0.3"
 appcompat = "1.7.1"
 material = "1.12.0"
@@ -20,7 +25,7 @@ androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", versi
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Expressive" }
 
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }

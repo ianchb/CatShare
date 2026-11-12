@@ -110,7 +110,7 @@
     <string name="_5ghz_suggestion">您的设备支持 5GHz Wi-Fi，建议启用此功能</string>
     <string name="devices_found">%1$d 个设备</string>
     <string name="settings_sending">发送</string>
-    <string name="force_send_5ghz_name">发送时强制启用 5GHz</string>
+    <string name="force_send_5ghz_name">发送时默认启用 5GHz</string>
     <string name="force_send_5ghz_desc">发送文件时始终尝试使用 5GHz，即使接收端设备未广播 5GHz 支持</string>
     <string name="force_send_5ghz_warning">这可能有助于提高向支持 5GHz 但未正确报告的设备（例如 Xiaomi 设备）发送的效率，但错误设置可能导致传输失败!</string>
     <string name="use_5ghz_this_time">本次传输启用 5GHz</string>
@@ -123,4 +123,17 @@
     <string name="mac_address_override_label" >MAC 地址</string>
     <string name="error_invalid_mac_format" >请输入有效的 MAC 地址</string>
     <string name="mac_address_override_note" >注：请输入本机 p2p0 接口的 MAC 地址。</string>
+    <string name="app_tagline">与互传联盟设备快速互传文件</string>
+    <string name="receiver_on">可被发现</string>
+    <string name="receiver_off">不可被发现</string>
+    <string name="enable_receiver">开启</string>
+    <string name="disable_receiver">关闭</string>
+    <string name="share_with">发送到 %1$s</string>
+    <string name="recipients_nearby">附近的设备</string>
+    <string name="recipients_nearby_desc">请确保接收设备已开启“可被发现”</string>
+    <string name="no_devices_yet">正在寻找附近的设备……</string>
+    <string name="sending_to">正在发送到 %1$s</string>
+    <string name="files_count_more">另有 %1$d 个</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_about">关于</string>
 </resources>

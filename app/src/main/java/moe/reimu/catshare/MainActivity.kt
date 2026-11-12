@@ -17,29 +17,27 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.launch
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -49,13 +47,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import moe.reimu.catshare.services.GattServerService
-import moe.reimu.catshare.ui.DefaultCard
+import moe.reimu.catshare.ui.CardItemSpacing
+import moe.reimu.catshare.ui.ContentRow
+import moe.reimu.catshare.ui.ExpressiveCard
+import moe.reimu.catshare.ui.IconMedallion
+import moe.reimu.catshare.ui.ScreenContentPadding
 import moe.reimu.catshare.ui.theme.CatShareTheme
 import moe.reimu.catshare.utils.ServiceState
 import moe.reimu.catshare.utils.TAG
@@ -136,18 +139,21 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MainActivityContent() {
-    var checked by remember { mutableStateOf(false) }
-    val listState = rememberLazyListState()
-
     val context = LocalContext.current
+    val listState = rememberLazyListState()
+    val scrollBehavior =
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+
+    var receiverRunning by remember { mutableStateOf(false) }
+
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 if (intent.action == ServiceState.ACTION_UPDATE_RECEIVER_STATE) {
-                    checked = intent.getBooleanExtra("isRunning", false)
+                    receiverRunning = intent.getBooleanExtra("isRunning", false)
                 }
             }
         }
@@ -158,22 +164,16 @@ fun MainActivityContent() {
         )
         context.sendBroadcast(ServiceState.getQueryIntent())
 
-        onDispose {
-            context.unregisterReceiver(receiver)
-        }
+        onDispose { context.unregisterReceiver(receiver) }
     }
 
     val localMacAddressGranted = remember {
-        context.checkSelfPermission("android.permission.LOCAL_MAC_ADDRESS") == PackageManager.PERMISSION_GRANTED
+        context.checkSelfPermission("android.permission.LOCAL_MAC_ADDRESS") ==
+                PackageManager.PERMISSION_GRANTED
     }
 
-    var shizukuGranted by remember {
-        mutableStateOf(false)
-    }
-
-    var shizukuAvailable by remember {
-        mutableStateOf(false)
-    }
+    var shizukuGranted by remember { mutableStateOf(false) }
+    var shizukuAvailable by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         val permissionListener = Shizuku.OnRequestPermissionResultListener { _, grantResult ->
@@ -181,23 +181,21 @@ fun MainActivityContent() {
             shizukuGranted = grantResult == PackageManager.PERMISSION_GRANTED
         }
 
-        val binderRecvListener = Shizuku.OnBinderReceivedListener {
+        val binderReceivedListener = Shizuku.OnBinderReceivedListener {
             shizukuAvailable = true
             shizukuGranted = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
         }
 
-        val binderDeadReceiver = Shizuku.OnBinderDeadListener {
-            shizukuAvailable = false
-        }
+        val binderDeadListener = Shizuku.OnBinderDeadListener { shizukuAvailable = false }
 
         Shizuku.addRequestPermissionResultListener(permissionListener)
-        Shizuku.addBinderReceivedListenerSticky(binderRecvListener)
-        Shizuku.addBinderDeadListener(binderDeadReceiver)
+        Shizuku.addBinderReceivedListenerSticky(binderReceivedListener)
+        Shizuku.addBinderDeadListener(binderDeadListener)
 
         onDispose {
             Shizuku.removeRequestPermissionResultListener(permissionListener)
-            Shizuku.removeBinderReceivedListener(binderRecvListener)
-            Shizuku.removeBinderDeadListener(binderDeadReceiver)
+            Shizuku.removeBinderReceivedListener(binderReceivedListener)
+            Shizuku.removeBinderDeadListener(binderDeadListener)
         }
     }
 
@@ -209,224 +207,231 @@ fun MainActivityContent() {
         }
     }
 
-    Scaffold(topBar = {
-        TopAppBar(
-            title = {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-            actions = {
-                IconButton(onClick = {
-                    context.startActivity(Intent(context, SettingsActivity::class.java))
-                }) {
-                    Icon(
-                        imageVector = Icons.Filled.Settings,
-                        contentDescription = stringResource(R.string.title_activity_settings),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        )
-    }) { innerPadding ->
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            LargeFlexibleTopAppBar(
+                title = { Text(stringResource(R.string.app_name)) },
+                subtitle = { Text(stringResource(R.string.app_tagline)) },
+                actions = {
+                    IconButton(onClick = {
+                        context.startActivity(Intent(context, SettingsActivity::class.java))
+                    }) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.ic_settings),
+                            contentDescription = stringResource(R.string.title_activity_settings),
+                        )
+                    }
+                },
+                scrollBehavior = scrollBehavior,
+            )
+        },
+    ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
             state = listState,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(
-                horizontal = 16.dp,
-                vertical = 16.dp),
+            verticalArrangement = CardItemSpacing,
+            contentPadding = ScreenContentPadding,
         ) {
+            item { SendEntryCard(onClick = { pickFilesLauncher.launch() }) }
+
             item {
-                DefaultCard(onClick = {
-                    pickFilesLauncher.launch()
-                }) {
-                    Row(
-                        modifier = Modifier
-                            .padding(20.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Share,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .padding(end = 20.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Column {
-                            Text(
-                                text = stringResource(R.string.send),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.send_desc),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-            item {
-                DefaultCard(onClick = {
-                    if (checked) {
-                        GattServerService.stop(context)
-                    } else {
-                        GattServerService.start(context)
-                    }
-                }) {
-                    Row(
-                        modifier = Modifier
-                            .padding(20.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = ImageVector.vectorResource(R.drawable.ic_bluetooth_searching),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .padding(end = 20.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.discoverable),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.discoverable_desc),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = checked,
-                            onCheckedChange = {
-                                if (it) {
-                                    GattServerService.start(context)
-                                } else {
-                                    GattServerService.stop(context)
-                                }
-                            },
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
-                    }
-                }
+                ReceiveCard(
+                    running = receiverRunning,
+                    onToggle = { enable ->
+                        if (enable) GattServerService.start(context)
+                        else GattServerService.stop(context)
+                    },
+                )
             }
 
             if (!localMacAddressGranted) {
                 item {
-                    DefaultCard(onClick = {
-                        if (shizukuAvailable && !shizukuGranted) {
-                            try {
-                                Shizuku.requestPermission(0)
-                            } catch (e: Throwable) {
-                                e.printStackTrace()
-                            }
-                        } else if (!shizukuAvailable) {
-                            context.startActivity(Intent(context, SettingsActivity::class.java))
-                        }
-                    }) {
-                        Row(
-                            modifier = Modifier
-                                .padding(20.dp)
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val iconColor = when {
-                                shizukuAvailable && shizukuGranted -> MaterialTheme.colorScheme.primary
-                                shizukuAvailable -> MaterialTheme.colorScheme.tertiary
-                                else -> MaterialTheme.colorScheme.error
-                            }
+                    ShizukuCard(
+                        available = shizukuAvailable,
+                        granted = shizukuGranted,
+                        onClick = {
+                            when {
+                                shizukuAvailable && !shizukuGranted -> runCatching {
+                                    Shizuku.requestPermission(0)
+                                }
 
-                            Icon(
-                                imageVector = if (shizukuAvailable && shizukuGranted) {
-                                    ImageVector.vectorResource(R.drawable.ic_done)
-                                } else {
-                                    ImageVector.vectorResource(R.drawable.ic_close)
-                                },
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .padding(end = 20.dp),
-                                tint = iconColor
-                            )
-                            Column {
-                                Text(
-                                    text = stringResource(
-                                        if (shizukuAvailable) {
-                                            if (shizukuGranted) R.string.shizuku_available
-                                            else R.string.shizuku_not_granted
-                                        } else {
-                                            R.string.shizuku_unavailable
-                                        }
-                                    ),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.shizuku_desc),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                !shizukuAvailable -> context.startActivity(
+                                    Intent(context, SettingsActivity::class.java)
                                 )
                             }
-                        }
-                    }
+                        },
+                    )
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun SendEntryCard(onClick: () -> Unit) {
+    ExpressiveCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        restingCorner = 36.dp,
+        pressedCorner = 26.dp,
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            IconMedallion(
+                icon = ImageVector.vectorResource(R.drawable.ic_send),
+                contentDescription = null,
+                size = 64,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            )
+            Spacer(Modifier.height(20.dp))
+            Text(
+                text = stringResource(R.string.send),
+                style = MaterialTheme.typography.headlineMediumEmphasized,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.send_desc),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReceiveCard(running: Boolean, onToggle: (Boolean) -> Unit) {
+    ExpressiveCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = { onToggle(!running) },
+        containerColor = if (running) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
+        restingCorner = 36.dp,
+        pressedCorner = 26.dp,
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            ContentRow(
+                title = stringResource(R.string.discoverable),
+                supporting = stringResource(R.string.discoverable_desc),
+                leading = {
+                    IconMedallion(
+                        icon = ImageVector.vectorResource(R.drawable.ic_bluetooth_searching),
+                        contentDescription = null,
+                        containerColor = if (running) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerHighest
+                        },
+                        contentColor = if (running) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                },
+                trailing = { Switch(checked = running, onCheckedChange = null) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ShizukuCard(available: Boolean, granted: Boolean, onClick: () -> Unit) {
+    val ok = available && granted
+    val container = when {
+        ok -> MaterialTheme.colorScheme.tertiaryContainer
+        else -> MaterialTheme.colorScheme.surfaceContainer
+    }
+    val content = when {
+        ok -> MaterialTheme.colorScheme.onTertiaryContainer
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    ExpressiveCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        containerColor = container,
+        contentColor = content,
+        restingCorner = 36.dp,
+        pressedCorner = 26.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconMedallion(
+                icon = ImageVector.vectorResource(
+                    if (ok) R.drawable.ic_check_circle else R.drawable.ic_error
+                ),
+                contentDescription = null,
+                containerColor = content.copy(alpha = 0.14f),
+                contentColor = content,
+            )
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(
+                        when {
+                            ok -> R.string.shizuku_available
+                            available -> R.string.shizuku_not_granted
+                            else -> R.string.shizuku_unavailable
+                        }
+                    ),
+                    style = MaterialTheme.typography.bodyLargeEmphasized,
+                    color = content,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.shizuku_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = content.copy(alpha = 0.8f),
+                )
+            }
+        }
+    }
+}
 
 class ChooseFilesContract : ActivityResultContract<Void?, List<Uri>>() {
     override fun createIntent(context: Context, input: Void?): Intent {
-        val cf = Intent(Intent.ACTION_GET_CONTENT)
+        val contentIntent = Intent(Intent.ACTION_GET_CONTENT)
             .setType("*/*")
             .addCategory(Intent.CATEGORY_OPENABLE)
             .putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        return Intent.createChooser(cf, context.getString(R.string.choose_files))
+        return Intent.createChooser(contentIntent, context.getString(R.string.choose_files))
     }
 
     override fun getSynchronousResult(
         context: Context,
         input: Void?
-    ): SynchronousResult<List<Uri>>? =
-        null
+    ): SynchronousResult<List<Uri>>? = null
 
     override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> {
         if (intent == null) {
             return emptyList()
         }
 
-        val ret = mutableListOf<Uri>()
+        val result = mutableListOf<Uri>()
 
         val clipData = intent.clipData
         if (clipData != null) {
             for (i in 0..<clipData.itemCount) {
-                clipData.getItemAt(i).uri?.let {
-                    ret.add(it)
-                }
+                clipData.getItemAt(i).uri?.let { result.add(it) }
             }
         } else {
-            intent.data?.let {
-                ret.add(it)
-            }
+            intent.data?.let { result.add(it) }
         }
 
-        return ret
+        return result
     }
 }

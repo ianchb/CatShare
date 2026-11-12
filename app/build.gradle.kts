@@ -17,8 +17,8 @@ android {
         applicationId = "moe.reimu.catshare"
         minSdk = 29
         targetSdk = 36
-        versionCode = 9
-        versionName = "1.8"
+        versionCode = 10
+        versionName = "1.9"
     }
 
     signingConfigs {
@@ -56,7 +56,11 @@ android {
                 "proguard-rules.pro"
             )
 
-            signingConfig = signingConfigs.findByName("release")
+            // Only sign when a keystore is configured; otherwise emit an unsigned APK that can be
+            // signed separately (apksigner, platform keys, F-Droid, etc.).
+            if (signingConfigs.findByName("release")?.storeFile != null) {
+                signingConfig = signingConfigs.findByName("release")
+            }
         }
         debug {
             applicationIdSuffix = ".debug"

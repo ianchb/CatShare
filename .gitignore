@@ -11,3 +11,8 @@ local.properties
 
 keystore.jks
 signing.properties
+
+# local analysis scratch / build deliverables
+.analysis/
+dist/
+deps.txt

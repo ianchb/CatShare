@@ -20,24 +20,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -46,23 +40,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -72,8 +63,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -81,12 +72,19 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import moe.reimu.catshare.models.DiscoveredDevice
 import moe.reimu.catshare.models.FileInfo
 import moe.reimu.catshare.models.TaskInfo
 import moe.reimu.catshare.services.P2pSenderService
-import moe.reimu.catshare.ui.DefaultCard
+import moe.reimu.catshare.ui.ContentRow
+import moe.reimu.catshare.ui.ExpressiveCard
+import moe.reimu.catshare.ui.IconMedallion
+import moe.reimu.catshare.ui.MetaPill
+import moe.reimu.catshare.ui.ScreenContentPadding
 import moe.reimu.catshare.ui.theme.CatShareTheme
 import moe.reimu.catshare.utils.BleUtils
 import moe.reimu.catshare.utils.DeviceUtils
@@ -120,19 +118,17 @@ class ShareActivity : ComponentActivity() {
 
         val fileInfos = try {
             if (intent.action == Intent.ACTION_SEND) {
-                @Suppress("DEPRECATION") val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                @Suppress("DEPRECATION") val uri =
+                    intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
                 if (uri != null) {
                     listOf(uri).mapNotNull { extractFileInfo(it) }
                 } else {
                     val text = intent.getStringExtra(Intent.EXTRA_TEXT)
-                    listOf(
-                        FileInfo(
-                            Uri.EMPTY, "", "", 0, text
-                        )
-                    )
+                    listOf(FileInfo(Uri.EMPTY, "", "", 0, text))
                 }
             } else {
-                @Suppress("DEPRECATION") val uris = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+                @Suppress("DEPRECATION") val uris =
+                    intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
                 uris?.mapNotNull { extractFileInfo(it) } ?: emptyList()
             }
         } catch (e: Throwable) {
@@ -148,14 +144,12 @@ class ShareActivity : ComponentActivity() {
             return
         }
 
-        Log.i(TAG, "Shared ${fileInfos.size} files")
-
         ShizukuUtils.bindService()
 
         enableEdgeToEdge()
         setContent {
             CatShareTheme {
-                ShareActivityContent(fileInfos)
+                ShareActivityContent(files = fileInfos, onFinish = { finish() })
             }
         }
     }
@@ -173,11 +167,7 @@ class ShareActivity : ComponentActivity() {
                 FileInfo(
                     uri,
                     it.getString(it.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)),
-                    if (mimeIndex < 0) {
-                        "application/octet-stream"
-                    } else {
-                        it.getString(mimeIndex)
-                    },
+                    if (mimeIndex < 0) "application/octet-stream" else it.getString(mimeIndex),
                     it.getLong(it.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)),
                     null
                 )
@@ -188,388 +178,252 @@ class ShareActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun ShareActivityContent(files: List<FileInfo>) {
+fun ShareActivityContent(
+    files: List<FileInfo>,
+    onFinish: () -> Unit,
+) {
     val context = LocalContext.current
     val discoveredDevices = deviceScanner()
-    val listState = rememberLazyListState()
     val settings = remember { AppSettings(context) }
     val hardware5GHzSupported = remember { WifiUtils.is5GHzBandSupported(context) }
     val deviceForce5GhzStates = remember { mutableStateMapOf<String, Boolean>() }
+    val scrollBehavior =
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
-    BackHandler {
-        (context as? ComponentActivity)?.finish()
+    BackHandler { onFinish() }
+
+    val formattedSize = remember(files) {
+        Formatter.formatFileSize(context, files.sumOf { it.size })
     }
 
-    val totalSize = remember(files) {
-        files.sumOf { it.size }
-    }
-
-    val formattedSize = remember(totalSize) {
-        Formatter.formatFileSize(context, totalSize)
+    fun startSending(device: DiscoveredDevice) {
+        val task = TaskInfo(
+            id = Random.nextInt(),
+            device = device,
+            files = files,
+            force5Ghz = deviceForce5GhzStates[device.id] ?: settings.forceSend5Ghz,
+        )
+        if (P2pSenderService.startTaskChecked(context, task)) {
+            onFinish()
+        }
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.choose_recipient),
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Text(
-                            text = if (files.size == 1 && files[0].textContent != null) {
-                                stringResource(R.string.sharing_text)
-                            } else {
-                                pluralStringResource(R.plurals.files_summary, files.size, files.size, formattedSize)
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        (context as? ComponentActivity)?.finish()
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                )
-            )
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier.padding(innerPadding),
-            state = listState,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(
-                horizontal = 16.dp,
-                vertical = 16.dp
-            ),
-        ) {
-            item {
-                Text(
-                    text = stringResource(R.string.files_to_send),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-                )
-            }
-
-            item {
-                DefaultCard {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        files.take(3).forEach { file ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = ImageVector.vectorResource(R.drawable.ic_attach_file),
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .padding(end = 8.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = file.name.ifEmpty { stringResource(R.string.text_message) },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = if (file.textContent != null) {
-                                            stringResource(R.string.text_desc)
-                                        } else {
-                                            Formatter.formatFileSize(context, file.size)
-                                        },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                        }
-
-                        if (files.size > 3) {
-                            Text(
-                                text = "And ${files.size - 3} more file${if (files.size - 3 > 1) "s" else ""}...",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 8.dp, start = 32.dp)
+            LargeFlexibleTopAppBar(
+                title = { Text(stringResource(R.string.choose_recipient)) },
+                subtitle = {
+                    Text(
+                        if (files.size == 1 && files[0].textContent != null) {
+                            stringResource(R.string.sharing_text)
+                        } else {
+                            pluralStringResource(
+                                R.plurals.files_summary, files.size, files.size, formattedSize
                             )
                         }
-                    }
-                }
-            }
-
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp, top = 16.dp, bottom = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(R.string.available_devices),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f)
                     )
-
-                    if (discoveredDevices.isNotEmpty()) {
-                        Text(
-                            text = stringResource(R.string.devices_found, discoveredDevices.size),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                navigationIcon = {
+                    IconButton(onClick = onFinish) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.back),
                         )
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior,
+            )
+        },
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            state = rememberLazyListState(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = ScreenContentPadding,
+        ) {
+            item { FilesCard(files = files) }
+
+            item {
+                Text(
+                    text = stringResource(R.string.recipients_nearby),
+                    style = MaterialTheme.typography.titleSmallEmphasized,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp, top = 12.dp),
+                )
             }
 
             if (discoveredDevices.isEmpty()) {
-                item {
-                    DefaultCard {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(20.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-                            val rotation by infiniteTransition.animateFloat(
-                                initialValue = 0f,
-                                targetValue = 360f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(1500, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Restart
-                                ),
-                                label = "rotation"
-                            )
-
-                            Icon(
-                                imageVector = Icons.Filled.Refresh,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .padding(end = 20.dp)
-                                    .rotate(rotation),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.scanning_desc),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.scanning_notice),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
+                item { ScanningCard() }
             } else {
                 items(discoveredDevices, key = { it.id }) { device ->
-                    val deviceForce5Ghz = deviceForce5GhzStates.getOrPut(device.id) {
+                    val force5Ghz = deviceForce5GhzStates.getOrPut(device.id) {
                         settings.forceSend5Ghz
                     }
-
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn() + slideInVertically(
-                            initialOffsetY = { it / 4 }
-                        ),
-                        exit = fadeOut() + slideOutVertically(
-                            targetOffsetY = { -it / 4 }
-                        )
-                    ) {
-                        DefaultCard(onClick = {
-                            val task = TaskInfo(
-                                id = Random.nextInt(),
-                                device = device,
-                                files = files,
-                                force5Ghz = deviceForce5Ghz
-                            )
-                            P2pSenderService.startTaskChecked(context, task)
-
-                            (context as? ComponentActivity)?.finish()
-                        }) {
-                            Row(
-                                modifier = Modifier
-                                    .padding(20.dp)
-                                    .fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.AccountCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .padding(end = 20.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = if (BuildConfig.DEBUG) {
-                                            "${device.name} (${device.id}, ${device.device.address})"
-                                        } else {
-                                            device.name
-                                        },
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = device.brand ?: stringResource(R.string.unknown),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-
-                                        if (device.supports5Ghz) {
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Surface(
-                                                color = MaterialTheme.colorScheme.primaryContainer,
-                                                shape = MaterialTheme.shapes.small,
-                                                modifier = Modifier.padding(0.dp)
-                                            ) {
-                                                Text(
-                                                    text = "5GHz",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if (hardware5GHzSupported && !device.supports5Ghz) {
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                HorizontalDivider(
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                                    thickness = 1.dp
-                                )
-
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable(
-                                            indication = null,
-                                            interactionSource = remember { MutableInteractionSource() }
-                                        ) {
-                                            deviceForce5GhzStates[device.id] = !deviceForce5Ghz
-                                        },
-                                    color = if (deviceForce5Ghz) {
-                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                                    } else {
-                                        Color.Transparent
-                                    },
-                                    shape = MaterialTheme.shapes.medium
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = ImageVector.vectorResource(R.drawable.ic_wifi),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp),
-                                            tint = if (deviceForce5Ghz) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            }
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = stringResource(R.string.use_5ghz_this_time),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = if (deviceForce5Ghz) {
-                                                    MaterialTheme.colorScheme.onSurface
-                                                } else {
-                                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                                },
-                                                fontWeight = if (deviceForce5Ghz) {
-                                                    androidx.compose.ui.text.font.FontWeight.Medium
-                                                } else {
-                                                    androidx.compose.ui.text.font.FontWeight.Normal
-                                                }
-                                            )
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Text(
-                                                text = stringResource(R.string.force_5ghz_hint),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                            )
-                                        }
-                                        Switch(
-                                            checked = deviceForce5Ghz,
-                                            onCheckedChange = {
-                                                deviceForce5GhzStates[device.id] = it
-                                            },
-                                            modifier = Modifier.padding(start = 8.dp),
-                                            colors = SwitchDefaults.colors(
-                                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
-                                            )
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    DeviceCard(
+                        device = device,
+                        force5Ghz = force5Ghz,
+                        showForce5Ghz = hardware5GHzSupported && !device.supports5Ghz,
+                        onForce5GhzChange = { deviceForce5GhzStates[device.id] = it },
+                        onClick = { startSending(device) },
+                    )
                 }
             }
 
             item {
-                Row(
+                Text(
+                    text = stringResource(R.string.start_sending_notice),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Info,
+                        .padding(top = 12.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilesCard(files: List<FileInfo>) {
+    val context = LocalContext.current
+    ExpressiveCard(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            files.take(3).forEachIndexed { index, file ->
+                if (index > 0) Spacer(Modifier.height(12.dp))
+                ContentRow(
+                    title = file.name.ifEmpty { stringResource(R.string.text_message) },
+                    supporting = if (file.textContent != null) {
+                        stringResource(R.string.text_desc)
+                    } else {
+                        Formatter.formatFileSize(context, file.size)
+                    },
+                    leading = {
+                        IconMedallion(
+                            icon = ImageVector.vectorResource(R.drawable.ic_attach_file),
+                            contentDescription = null,
+                            size = 40,
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    },
+                )
+            }
+            if (files.size > 3) {
+                Spacer(Modifier.height(12.dp))
+                MetaPill(
+                    text = stringResource(R.string.files_count_more, files.size - 3),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScanningCard() {
+    val transition = rememberInfiniteTransition(label = "scanning")
+    val rotation by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "rotation",
+    )
+
+    ExpressiveCard(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Icon(
+                imageVector = ImageVector.vectorResource(R.drawable.ic_refresh),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(32.dp)
+                    .rotate(rotation),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.scanning_desc),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.recipients_nearby_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DeviceCard(
+    device: DiscoveredDevice,
+    force5Ghz: Boolean,
+    showForce5Ghz: Boolean,
+    onForce5GhzChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
+) {
+    ExpressiveCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            ContentRow(
+                title = if (BuildConfig.DEBUG) {
+                    "${device.name} (${device.id})"
+                } else {
+                    device.name
+                },
+                supporting = device.brand ?: stringResource(R.string.unknown),
+                leading = {
+                    IconMedallion(
+                        icon = ImageVector.vectorResource(R.drawable.ic_smartphone),
                         contentDescription = null,
-                        modifier = Modifier
-                            .size(16.dp)
-                            .padding(end = 4.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        size = 48,
                     )
-                    Text(
-                        text = stringResource(R.string.start_sending_notice),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                },
+                trailing = if (device.supports5Ghz) {
+                    { MetaPill(text = "5GHz") }
+                } else {
+                    null
+                },
+            )
+
+            if (showForce5Ghz) {
+                Spacer(Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.use_5ghz_this_time),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.force_5ghz_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = force5Ghz, onCheckedChange = onForce5GhzChange)
                 }
             }
         }
@@ -604,7 +458,6 @@ fun deviceScanner(): List<DiscoveredDevice> {
                 for ((uuid, data) in record.serviceData.entries) {
                     when (data.size) {
                         6 -> {
-                            // UUID contains brand and 5GHz flag
                             val buf = ByteBuffer.allocate(16)
                             buf.putLong(uuid.uuid.mostSignificantBits)
                             buf.putLong(uuid.uuid.leastSignificantBits)
@@ -614,7 +467,6 @@ fun deviceScanner(): List<DiscoveredDevice> {
                         }
 
                         27 -> {
-                            // Data contains device name and ID
                             val nameBuf = mutableListOf<Byte>()
                             for (i in 10..25) {
                                 if (data[i].toInt() != 0) {
@@ -640,13 +492,11 @@ fun deviceScanner(): List<DiscoveredDevice> {
                     return
                 }
 
-                val brand = brandId?.let {
-                    DeviceUtils.deviceNameById(it)
-                }
-
+                val brand = brandId?.let { DeviceUtils.deviceNameById(it) }
                 val newDevice = DiscoveredDevice(
                     result.device, senderId, deviceName, brand, supports5Ghz
                 )
+
                 var replaced = false
                 synchronized(devicesLock) {
                     deviceLastSeen[senderId] = System.currentTimeMillis()
@@ -668,26 +518,20 @@ fun deviceScanner(): List<DiscoveredDevice> {
 
         var startedScanner: BluetoothLeScanner? = null
 
-        val cleanupJob = kotlinx.coroutines.CoroutineScope(
-            kotlinx.coroutines.Dispatchers.Main
-        ).launch {
+        val cleanupJob = CoroutineScope(Dispatchers.Main).launch {
             while (true) {
-                kotlinx.coroutines.delay(2000)
-
+                delay(2000)
                 val currentTime = System.currentTimeMillis()
                 synchronized(devicesLock) {
                     val activeDevices = discoveredDevices.filter { device ->
                         val lastSeen = deviceLastSeen[device.id] ?: 0L
                         val isActive = (currentTime - lastSeen) < deviceTimeout
-
                         if (!isActive) {
                             Log.d(TAG, "Removing timed out device: ${device.name} (${device.id})")
                             deviceLastSeen.remove(device.id)
                         }
-
                         isActive
                     }
-
                     if (activeDevices.size != discoveredDevices.size) {
                         discoveredDevices = activeDevices
                     }
@@ -700,8 +544,9 @@ fun deviceScanner(): List<DiscoveredDevice> {
             val filters = listOf(
                 ScanFilter.Builder().setServiceUuid(ParcelUuid(BleUtils.ADV_SERVICE_UUID)).build()
             )
-            val settings =
-                ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+            val settings = ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .build()
 
             try {
                 scanner.startScan(filters, settings, callback)
@@ -714,14 +559,12 @@ fun deviceScanner(): List<DiscoveredDevice> {
 
         onPauseOrDispose {
             cleanupJob.cancel()
-
             try {
                 startedScanner?.stopScan(callback)
                 Log.d(TAG, "Stopped scanning")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to stop scan", e)
             }
-
             synchronized(devicesLock) {
                 deviceLastSeen.clear()
                 discoveredDevices = emptyList()

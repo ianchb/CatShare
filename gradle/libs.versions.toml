@@ -1,21 +1,16 @@
 [versions]
-agp = "8.13.1"
-kotlin = "2.2.0"
-coreKtx = "1.16.0"
-lifecycleRuntimeKtx = "2.9.2"
-activityCompose = "1.10.1"
-composeBom = "2025.09.00"
-# Material 3 Expressive components (ButtonGroup, FloatingToolbar, ToggleButton,
-# SplitButton, LoadingIndicator, MaterialShapes) are only published from
-# 1.5.0-alpha15 onwards. 1.5.0-alpha18 still only requires compileSdk 35, so it
-# works with the AGP/SDK versions this project already uses.
-material3Expressive = "1.5.0-alpha18"
-ktor = "3.0.3"
-appcompat = "1.7.1"
-material = "1.12.0"
-activity = "1.10.1"
+agp = "9.5.1"
+kotlin = "2.4.21"
+coreKtx = "1.19.1"
+lifecycleRuntimeKtx = "2.11.0"
+activityCompose = "1.13.0"
+composeBom = "2026.09.00"
+material3Expressive = "1.5.0-rc01"
+ktor = "3.6.1"
+appcompat = "1.8.0"
+material = "1.14.0"
+activity = "1.13.0"
 shizuku = "13.1.5"
-jetbrainsKotlinJvm = "2.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,7 +30,7 @@ ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor"
 ktor-server-websockets = { module = "io.ktor:ktor-server-websockets", version.ref = "ktor" }
 ktor-network-tls-certificates = { module = "io.ktor:ktor-network-tls-certificates", version.ref = "ktor" }
 
-kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.9.0" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.13.0" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
@@ -47,10 +42,8 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
-jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrainsKotlinJvm" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 

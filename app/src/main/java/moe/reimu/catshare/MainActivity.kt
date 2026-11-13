@@ -61,6 +61,7 @@ import moe.reimu.catshare.ui.IconMedallion
 import moe.reimu.catshare.ui.ScreenContentPadding
 import moe.reimu.catshare.ui.theme.CatShareTheme
 import moe.reimu.catshare.utils.ServiceState
+import moe.reimu.catshare.utils.checkLocalNetworkPermission
 import moe.reimu.catshare.utils.TAG
 import moe.reimu.catshare.utils.registerInternalBroadcastReceiver
 import rikka.shizuku.Shizuku
@@ -87,6 +88,11 @@ class MainActivity : ComponentActivity() {
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             permissionsToRequest.add(Manifest.permission.NEARBY_WIFI_DEVICES)
+        }
+
+        // For Android 17
+        if (!checkLocalNetworkPermission()) {
+            permissionsToRequest.add("android.permission.ACCESS_LOCAL_NETWORK")
         }
 
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(

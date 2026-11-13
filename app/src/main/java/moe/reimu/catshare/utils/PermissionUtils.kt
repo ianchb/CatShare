@@ -40,7 +40,18 @@ fun Context.checkBluetoothPermissions(): Boolean {
     return true
 }
 
+fun Context.checkLocalNetworkPermission(): Boolean {
+    if (Build.VERSION.SDK_INT < 37) return true
+    return ContextCompat.checkSelfPermission(
+        this, "android.permission.ACCESS_LOCAL_NETWORK"
+    ) == PackageManager.PERMISSION_GRANTED
+}
+
 fun Context.checkP2pPermissions(): Boolean {
+    if (!checkLocalNetworkPermission()) {
+        return false
+    }
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ContextCompat.checkSelfPermission(
             this, Manifest.permission.NEARBY_WIFI_DEVICES
         ) != PackageManager.PERMISSION_GRANTED

@@ -106,6 +106,7 @@ class P2pReceiverService : BaseP2pService() {
         Log.d(TAG, "onCreate")
 
         if (!checkP2pPermissions()) {
+            Toast.makeText(this, R.string.permission_missing, Toast.LENGTH_LONG).show()
             stopSelf()
             return
         }

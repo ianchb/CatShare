@@ -549,7 +549,7 @@ fun deviceScanner(): List<DiscoveredDevice> {
                 .build()
 
             try {
-                scanner.startScan(filters, settings, callback)
+                scanner?.startScan(filters, settings, callback)
                 startedScanner = scanner
                 Log.d(TAG, "Started scanning")
             } catch (e: SecurityException) {

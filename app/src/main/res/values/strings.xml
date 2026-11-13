@@ -140,4 +140,5 @@
     <string name="files_count_more">+%1$d more</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_about">About</string>
+    <string name="permission_missing">Permissions were revoked — open CatShare to grant them again</string>
 </resources>

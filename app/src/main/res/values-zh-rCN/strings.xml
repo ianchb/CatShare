@@ -136,4 +136,5 @@
     <string name="files_count_more">另有 %1$d 个</string>
     <string name="settings_appearance">外观</string>
     <string name="settings_about">关于</string>
+    <string name="permission_missing">权限已被收回，请打开 CatShare 重新授予</string>
 </resources>

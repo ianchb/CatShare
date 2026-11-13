@@ -1,5 +1,7 @@
 package moe.reimu.catshare.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -81,6 +83,7 @@ fun SectionHeader(
 }
 
 /** Icon + title + supporting text + trailing slot, used for list rows and cards. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ContentRow(
     title: String,
@@ -90,6 +93,7 @@ fun ContentRow(
     trailing: (@Composable () -> Unit)? = null,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
     supportingColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    titleMarquee: Boolean = false,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -104,8 +108,10 @@ fun ContentRow(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 color = titleColor,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+                modifier = if (titleMarquee) Modifier.basicMarquee() else Modifier,
+                maxLines = if (titleMarquee) 1 else 2,
+                softWrap = !titleMarquee,
+                overflow = if (titleMarquee) TextOverflow.Clip else TextOverflow.Ellipsis,
             )
             if (supporting != null) {
                 Spacer(Modifier.height(2.dp))

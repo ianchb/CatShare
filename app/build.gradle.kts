@@ -108,7 +108,9 @@ dependencies {
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.websockets)
     implementation(libs.ktor.server.core)
-    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.netty) {
+        exclude(group = "io.netty", module = "netty-codec-native-quic")
+    }
     implementation(libs.ktor.server.websockets)
     implementation(libs.ktor.network.tls.certificates)
 

@@ -52,6 +52,7 @@ import moe.reimu.catshare.BleSecurity
 import moe.reimu.catshare.BuildConfig
 import moe.reimu.catshare.exceptions.CancelledByUserException
 import moe.reimu.catshare.MyApplication
+import moe.reimu.catshare.PendingShareStreams
 import moe.reimu.catshare.R
 import moe.reimu.catshare.exceptions.ExceptionWithMessage
 import moe.reimu.catshare.models.DeviceInfo
@@ -319,7 +320,10 @@ class P2pSenderService : BaseP2pService() {
                             }
 
                             for ((i, rf) in task.files.withIndex()) {
-                                cr.openInputStream(rf.uri)!!.use { ist ->
+                                val input = PendingShareStreams.open(task.id, i)
+                                    ?: contentResolver.openInputStream(rf.uri)
+                                    ?: throw IllegalStateException("Unable to open ${rf.name}")
+                                input.use { ist ->
                                     zo.putNextEntry(ZipEntry("$i/${rf.name}"))
 
                                     val buffer = ByteArray(1024 * 1024 * 4)
@@ -541,6 +545,7 @@ class P2pSenderService : BaseP2pService() {
                     createFailedNotification(task.device.name, e)
                 )
             } finally {
+                PendingShareStreams.discard(task.id)
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 MyApplication.getInstance().clearBusy()
                 synchronized(currentTaskLock) {

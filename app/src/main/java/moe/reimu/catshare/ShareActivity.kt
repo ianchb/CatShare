@@ -205,8 +205,14 @@ fun ShareActivityContent(
             files = files,
             force5Ghz = deviceForce5GhzStates[device.id] ?: settings.forceSend5Ghz,
         )
+        if (!PendingShareStreams.prepare(context, task.id, files)) {
+            Toast.makeText(context, R.string.no_file_shared, Toast.LENGTH_SHORT).show()
+            return
+        }
         if (P2pSenderService.startTaskChecked(context, task)) {
             onFinish()
+        } else {
+            PendingShareStreams.discard(task.id)
         }
     }
 

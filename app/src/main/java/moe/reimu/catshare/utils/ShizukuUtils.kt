@@ -13,11 +13,14 @@ import moe.reimu.catshare.IMacAddressService
 import moe.reimu.catshare.services.MacAddressService
 import rikka.shizuku.Shizuku
 import java.net.NetworkInterface
-import kotlin.collections.iterator
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 object ShizukuUtils {
-    private val binderLock = Object()
-    private val serviceNotify = Object()
+    private val binderLock = Any()
+    private val serviceLock = ReentrantLock()
+    private val serviceNotify = serviceLock.newCondition()
     private var macService: IMacAddressService? = null
 
     init {
@@ -35,9 +38,7 @@ object ShizukuUtils {
                     macService = IMacAddressService.Stub.asInterface(service)
                 }
 
-                synchronized(serviceNotify) {
-                    serviceNotify.notifyAll()
-                }
+                serviceLock.withLock { serviceNotify.signalAll() }
             }
         }
 
@@ -80,9 +81,7 @@ object ShizukuUtils {
             }
         }
 
-        synchronized(serviceNotify) {
-            serviceNotify.wait(1000 * 20)
-        }
+        serviceLock.withLock { serviceNotify.await(20, TimeUnit.SECONDS) }
 
         synchronized(binderLock) {
             return macService?.p2pMacAddress
@@ -117,7 +116,6 @@ object ShizukuUtils {
         th.start()
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
     private fun nativeGetMacAddressByName(name: String): String? {
         val ifs = NetworkInterface.getNetworkInterfaces()
         for (intf in ifs) {

@@ -50,10 +50,10 @@ import kotlinx.serialization.json.Json
 import moe.reimu.catshare.AppSettings
 import moe.reimu.catshare.BleSecurity
 import moe.reimu.catshare.BuildConfig
-import moe.reimu.catshare.exceptions.CancelledByUserException
 import moe.reimu.catshare.MyApplication
 import moe.reimu.catshare.PendingShareStreams
 import moe.reimu.catshare.R
+import moe.reimu.catshare.exceptions.CancelledByUserException
 import moe.reimu.catshare.exceptions.ExceptionWithMessage
 import moe.reimu.catshare.models.DeviceInfo
 import moe.reimu.catshare.models.P2pInfo
@@ -81,6 +81,7 @@ import java.util.concurrent.TimeoutException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 class P2pSenderService : BaseP2pService() {
     private val binder = LocalBinder()
@@ -93,7 +94,7 @@ class P2pSenderService : BaseP2pService() {
 
     private var groupInfoFuture = CompletableDeferred<WifiP2pGroup>()
 
-    private val currentTaskLock = Object()
+    private val currentTaskLock = Any()
     private var currentJob: Job? = null
     private var curreentTaskId: Int? = null
 
@@ -469,7 +470,7 @@ class P2pSenderService : BaseP2pService() {
                         R.string.error_send_timeout_handshake
                     )
                     transferCompleteFuture.await()
-                    withTimeoutOrNull(5000L) {
+                    withTimeoutOrNull(5000L.milliseconds) {
                         statusFuture.await()
                     }
                 }
@@ -483,7 +484,7 @@ class P2pSenderService : BaseP2pService() {
                         throw CancelledByUserException(true)
                     }
                     if (status.first == 1) {
-                        delay(1000)
+                        delay(1000.milliseconds)
                         transferJob.cancel()
                         return@coroutineScope
                     }

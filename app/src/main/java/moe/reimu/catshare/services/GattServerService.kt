@@ -42,7 +42,6 @@ import moe.reimu.catshare.utils.ShizukuUtils
 import moe.reimu.catshare.utils.TAG
 import moe.reimu.catshare.utils.checkBluetoothPermissions
 import moe.reimu.catshare.utils.registerInternalBroadcastReceiver
-import java.util.Arrays
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 import kotlin.math.min
@@ -53,7 +52,7 @@ class GattServerService : Service() {
 
     private var advertisingSet: AdvertisingSet? = null
 
-    private val localDeviceInfoLock = Object()
+    private val localDeviceInfoLock = Any()
     private var localDeviceInfo = DeviceInfo(
         0, BleSecurity.getEncodedPublicKey(), "02:00:00:00:00:00", BuildConfig.VERSION_CODE
     )
@@ -264,7 +263,7 @@ class GattServerService : Service() {
             addServiceUuid(ParcelUuid(BleUtils.ADV_SERVICE_UUID))
             addServiceData(
                 advertisingUuid,
-                Arrays.copyOfRange(BleUtils.RANDOM_DATA, 0, 6)
+                BleUtils.RANDOM_DATA.copyOf(6)
             )
         }.build()
         val scanRespData = AdvertiseData.Builder().apply {

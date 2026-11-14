@@ -1,6 +1,6 @@
 package moe.reimu.catshare.exceptions
 
-import io.ktor.utils.io.CancellationException
+import kotlinx.coroutines.CancellationException
 
 class CancelledByUserException(val isRemote: Boolean) :
     CancellationException("Cancelled by user")

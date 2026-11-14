@@ -21,7 +21,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,12 +29,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ContainedLoadingIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -61,7 +58,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import kotlinx.coroutines.CoroutineScope
@@ -86,6 +82,7 @@ import moe.reimu.catshare.utils.TAG
 import moe.reimu.catshare.utils.WifiUtils
 import java.nio.ByteBuffer
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 class ShareActivity : ComponentActivity() {
     private lateinit var bluetoothManager: BluetoothManager
@@ -170,7 +167,6 @@ class ShareActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ShareActivityContent(
     files: List<FileInfo>,
@@ -427,7 +423,7 @@ fun deviceScanner(): List<DiscoveredDevice> {
     LifecycleResumeEffect(context) {
         val manager = context.getSystemService(BluetoothManager::class.java)
         val adapter = manager.adapter
-        val devicesLock = Object()
+        val devicesLock = Any()
 
         val callback = object : ScanCallback() {
             override fun onScanFailed(errorCode: Int) {
@@ -506,7 +502,7 @@ fun deviceScanner(): List<DiscoveredDevice> {
 
         val cleanupJob = CoroutineScope(Dispatchers.Main).launch {
             while (true) {
-                delay(2000)
+                delay(2000.milliseconds)
                 val currentTime = System.currentTimeMillis()
                 synchronized(devicesLock) {
                     val activeDevices = discoveredDevices.filter { device ->

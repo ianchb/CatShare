@@ -30,6 +30,7 @@ import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.net.toUri
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.websocket.WebSockets
@@ -66,6 +67,7 @@ import moe.reimu.catshare.models.WebSocketMessage
 import moe.reimu.catshare.utils.NotificationUtils
 import moe.reimu.catshare.utils.ProgressCounter
 import moe.reimu.catshare.utils.TAG
+import moe.reimu.catshare.utils.ZipPathValidatorCallback
 import moe.reimu.catshare.utils.awaitWithTimeout
 import moe.reimu.catshare.utils.checkP2pPermissions
 import moe.reimu.catshare.utils.connectSuspend
@@ -83,8 +85,7 @@ import java.util.zip.ZipInputStream
 import javax.net.ssl.SSLContext
 import kotlin.math.min
 import kotlin.random.Random
-import androidx.core.net.toUri
-import moe.reimu.catshare.utils.ZipPathValidatorCallback
+import kotlin.time.Duration.Companion.milliseconds
 
 class P2pReceiverService : BaseP2pService() {
     private lateinit var notificationManager: NotificationManagerCompat
@@ -141,7 +142,7 @@ class P2pReceiverService : BaseP2pService() {
     }
 
 
-    private val currentTaskLock = Object()
+    private val currentTaskLock = Any()
     private var currentJob: Job? = null
     private var currentTaskId: Int? = null
 
@@ -475,7 +476,7 @@ class P2pReceiverService : BaseP2pService() {
                             )
                         )
 
-                        val userResponse = withTimeoutOrNull(10000L) {
+                        val userResponse = withTimeoutOrNull(10000L.milliseconds) {
                             waitForAction(localTaskId)
                         }
 
@@ -497,7 +498,7 @@ class P2pReceiverService : BaseP2pService() {
                         showTextCopiedToast()
 
                         wsSession.sendStatusIgnoreException(99, taskId, 1, "ok")
-                        delay(1000)
+                        delay(1000.milliseconds)
                         filesReceived = true
                         return@async
                     }
@@ -538,7 +539,7 @@ class P2pReceiverService : BaseP2pService() {
                             )
                         )
                         wsSession.sendStatusIgnoreException(99, taskId, 1, "ok")
-                        delay(1000)
+                        delay(1000.milliseconds)
                     } else {
                         throw IllegalStateException("Failed to receive any file")
                     }

@@ -7,7 +7,6 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.time.withTimeout
 import moe.reimu.catshare.exceptions.ExceptionWithMessage
 import java.time.Duration
-import java.util.concurrent.TimeoutException
 
 
 suspend fun <T> withTimeoutReason(
